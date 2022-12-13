@@ -3,16 +3,20 @@ const WebSocket = require('ws');
 const games = {}
 
 function start() {
-  const wss = new WebSocket.Server({ port: 4000 }, () =>
+  const ws = new WebSocket.Server({ port: 4000 }, () =>
     console.log('WebSocket Server started on port 4000')
   );
 
-  wss.on('connection', (wsClient) => {
-    wsClient.on('message', async (message) => {
+  ws.on('connection', (client) => {
+    client.on('message', async (message) => {
       const req = JSON.parse(message.toString());
-      wsClient.nickname = req.payload.username
+
+      const nickname = req.payload.username;
+      const gameId = req.payload.gameId;
+      
+      client.nickname = nickname;
       if (req.event == 'connect') {
-        initGames(wsClient, req.payload.gameId)
+        initGames(client, gameId)
       }
 
       broadcast(req);
@@ -48,9 +52,12 @@ function start() {
   }
 
   function broadcast(params) {
+    
     let res;
     const { username, gameId } = params.payload
+
     games[gameId].forEach((client) => {
+      
       switch (params.event) {
         case 'connect':
           res = {
@@ -75,6 +82,7 @@ function start() {
           res = { type: 'logout', payload: params.payload };
           break;
       }
+      
       client.send(JSON.stringify(res));
     });
   }

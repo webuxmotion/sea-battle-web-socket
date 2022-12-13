@@ -7,7 +7,7 @@ const BoardComponent = ({ board, setBoard, shipsReady, isMyBoard, canShoot, shoo
         boardClasses.push('active-shoot')
     }
     function addMark(x, y) {
-        console.log(shipsReady, isMyBoard);
+        
         if (!shipsReady && isMyBoard) {
             board.addShip(x, y);
         } else if (canShoot && !isMyBoard) {

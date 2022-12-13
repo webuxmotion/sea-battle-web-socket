@@ -1,84 +1,83 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const wss = new WebSocket('ws://localhost:4000')
 
 function Login() {
-    const [invitationGame, setTypeEnter] = useState(false)
-    const [gameId, setGameId] = useState('');
-    const [nickname, setNickname] = useState('');
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const [nickname, setNickname] = useState('player_1');
+    const [playersCount, setPlayersCount] = useState('1');
+
     const startPlay = (e) => {
         e.preventDefault();
-        if (nickname && gameId) {
-            localStorage.nickname = nickname
-            navigate('/chat/' + gameId);    
+        if (nickname) {
+            const link = `/chat/${Date.now()}?playersCount=${playersCount}&nickname=${nickname}`;
+            navigate(link);
         }
-        
-    }
+    };
+
+    useEffect(() => {
+        wss.close();
+    }, []);
+
     return (
         <div>
-            <img width="300" src="/hero.jpeg" />
-            <h2>Авторизация</h2>
+            <img alt="idi na hui" width="100" src="/hero.jpeg" />
+            <h2>Snark Game</h2>
             <form onSubmit={startPlay}>
                 <div className="field-group">
-                    
-                    <div><label htmlFor="nickname">Ваше имя</label></div>
-                    <input 
-                        type="text" 
-                        name="nickname" 
-                        id="nickname" 
-                        onChange={e => setNickname(e.target.value)}/>
-                </div>
-                <div onChange={(e) => setTypeEnter(e.target.id === 'ingame')} className="field-group">
-                    <input 
-                        type="radio" 
-                        name="typeEnter" 
-                        id="gen" 
-                        value={!invitationGame}
-                        defaultChecked={!invitationGame}
 
+                    <div><label htmlFor="nickname">Your nickname</label></div>
+                    <input
+                        type="text"
+                        name="nickname"
+                        value={nickname}
+                        id="nickname"
+                        onChange={e => setNickname(e.target.value)} 
                     />
-                    <label htmlFor="gen">Создать игру</label>
-                    <input 
-                        type="radio" 
-                        name="typeEnter" 
-                        id="ingame" 
-                        value={invitationGame}
-                        defaultChecked={invitationGame}
-                    />
-                    <label htmlFor="ingame">Войти в игру по идентификатору</label>
                 </div>
-                <div className="field-group">
-                    {invitationGame ? (
-                        <>
-                            <div>
-                                <label htmlFor="gameId">Введите идентификатор игры</label>                                
-                            </div>
-                            <input 
-                                type="text" 
-                                name="gameId" 
-                                defaultValue="" 
-                                id="gameId" 
-                                onChange={e => setGameId(e.target.value)}/>
-                        </>
-                        
-                    ) : (
-                        <>
-                            <button
-                                className="btn-gen" 
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    setGameId(Date.now())
-                                }}>
-                                    Сгенерировать идентификатор игры
-                            </button>
-                            <p>{gameId}</p>
-                        </>
-                        
-                    )}
-                </div>
-                
-                <button type="submit" className="btn-ready">ИГРАТЬ</button>
+
+                <fieldset>
+                    <legend>How many players?</legend>
+
+                    <div>
+                        <input 
+                            type="radio" 
+                            id="huey" 
+                            name="playersCount" 
+                            value="1" 
+                            checked={playersCount === "1"}
+                            onChange={(event) => setPlayersCount(event.target.value)}
+                        />
+                        <label htmlFor="huey">1</label>
+                    </div>
+
+                    <div>
+                        <input 
+                            type="radio" 
+                            id="dewey" 
+                            name="playersCount" 
+                            value="2" 
+                            checked={playersCount === "2"}
+                            onChange={(event) => setPlayersCount(event.target.value)}
+                        />
+                        <label htmlFor="dewey">2</label>
+                    </div>
+
+                    <div>
+                        <input 
+                            type="radio" 
+                            id="louie" 
+                            name="playersCount" 
+                            value="3" 
+                            checked={playersCount === "3"}
+                            onChange={(event) => setPlayersCount(event.target.value)}
+                        />
+                        <label htmlFor="louie">3</label>
+                    </div>
+                </fieldset>
+
+                <button type="submit" className="btn-ready">Play Now</button>
             </form>
         </div>
     );

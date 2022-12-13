@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import QRCode from "react-qr-code";
 import ActionsInfo from '../components/ActionsInfo';
 import BoardComponent from '../components/BoardComponent';
 import { Board } from '../models/Board';
@@ -12,8 +13,11 @@ const GamePage = () => {
     const [rivalName, setRivalName] = useState('')
     const [shipsReady, setShipReady] = useState(false);
     const [canShoot, setCanShoot] = useState(false);
-
     const { gameId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const nickname = searchParams.get('nickname');
+    const playersCount = searchParams.get('playersCount');
+    const [guestLink, setGuestLink] = useState(`http://192.168.0.100:3000/chat/${gameId}?playersCount=${playersCount}&nickname=player_2`);
     const navigate = useNavigate()
 
     wss.onmessage = function (response) {
@@ -27,13 +31,12 @@ const GamePage = () => {
                 setRivalName(rivalName)
                 break;
             case 'readyToPlay':
-                if (payload.username === localStorage.nickname && canStart) {
+                if (payload.username === nickname && canStart) {
                     setCanShoot(true)
                 }
                 break;
             case 'afterShootByMe':
-                console.log('afterShoot', username !== localStorage.nickname);
-                if (username !== localStorage.nickname) {
+                if (username !== nickname) {
                     const isPerfectHit = myBoard.cells[y][x].mark?.name === 'ship'
                     changeBoardAfterShoot(myBoard, setMyBoard, x, y, isPerfectHit)
                     wss.send(JSON.stringify({ event: 'checkShoot', payload: { ...payload, isPerfectHit } }))
@@ -43,7 +46,7 @@ const GamePage = () => {
                 }
                 break;
             case 'isPerfectHit':
-                if (username === localStorage.nickname) {
+                if (username === nickname) {
                     changeBoardAfterShoot(hisBoard, setHisBoard, x, y, payload.isPerfectHit);
                     payload.isPerfectHit ? setCanShoot(true) : setCanShoot(false)
                 }
@@ -69,46 +72,43 @@ const GamePage = () => {
     }
 
     function ready() {
-        wss.send(JSON.stringify({ event: 'ready', payload: { username: localStorage.nickname, gameId } }))
+        wss.send(JSON.stringify({ event: 'ready', payload: { username: nickname, gameId } }))
         setShipReady(true)
     }
 
     function shoot(x, y) {
-        wss.send(JSON.stringify({ event: 'shoot', payload: { username: localStorage.nickname, x, y, gameId } }))
+        wss.send(JSON.stringify({ event: 'shoot', payload: { username: nickname, x, y, gameId } }))
     }
 
     useEffect(() => {
-        wss.send(JSON.stringify({ event: 'connect', payload: { username: localStorage.nickname, gameId } }));
-        restart()
-    }, []);
+        setTimeout(() => {
+            wss.send(JSON.stringify({ event: 'connect', payload: { username: nickname, gameId } }));
+            restart();
+        }, 300);
+    }, [gameId]);
+
+    console.log(canShoot);
+
     return (
         <div>
-            <img src="/hero.jpeg" />
-            <p>ДОБРО ПОЖАЛОВАТЬ В ИГРУ</p>
+            <img alt="idi na hui" width="100" src="/hero.jpeg" />
+            <div>
+                <QRCode value={guestLink} />
+            </div>
+        
+            <div>
+                <a href={guestLink}>{guestLink}</a>
+            </div>
+            
             <div className='boards-container'>
                 <div>
-                    <p className='nick'>{localStorage.nickname}</p>
-                    <BoardComponent
-                        board={myBoard}
-                        setBoard={setMyBoard}
-                        shipsReady={shipsReady}
-                        isMyBoard
-                        canShoot={false}
-                    />
+                    <p className='nick'>{nickname}</p>
                 </div>
                 <div>
                     <p className='nick'>{rivalName || 'Ваш соперник пока не вошел.'}</p>
-                    <BoardComponent
-                        board={hisBoard}
-                        setBoard={setHisBoard}
-                        shipsReady={shipsReady}
-                        canShoot={canShoot}
-                        shoot={shoot}
-                    />
-
                 </div>
             </div>
-            <ActionsInfo ready={ready} canShoot={canShoot} shipsReady={shipsReady} />
+            <button onClick={ready}>Ready</button>
         </div>
     );
 }
